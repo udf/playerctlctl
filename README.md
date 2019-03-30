@@ -1,7 +1,8 @@
 # Playerctlctl
-[Playerctlctl]() is a daemon that talks to [Playerctl]() (a command-line utility
-for controling media players that implement [MPRIS]() (A standard D-Bus interface
-for controling media players))
+[Playerctlctl](https://github.com/udf/playerctlctl) is a daemon that talks to
+[Playerctl](https://github.com/acrisci/playerctl) (a command-line utility
+for controling media players that implement [MPRIS](http://specifications.freedesktop.org/mpris-spec/latest/)
+A standard D-Bus interface for controling media players))
 
 
 # Why tho
@@ -21,8 +22,8 @@ select/talk to the currently active player.
 Firstly, you should get Playerctl running on your system and talking to a
 player of your choice.
 
-I made this to replace [my statusbar script](), so you need to make your own
-outputter module for your own bar.
+I made this to replace [my statusbar script](https://github.com/udf/dotfiles-stow/blob/5444705006ee8d416e96038f0bc7d2d15fc75096/home/.config/polybar/music.py),
+so you need to make your own outputter module for your own bar.
 
 After you get the output appearing correctly
 in your bar (anywhere, really) you need to setup hotkeys to talk to playerctlctl.
