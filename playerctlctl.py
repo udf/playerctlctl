@@ -119,6 +119,7 @@ def move_current_player_index(amount):
     if not players:
         return False
     current_player_index = (current_player_index + amount) % len(players)
+    update_status()
     return True
 
 
