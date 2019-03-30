@@ -35,5 +35,5 @@ $ socat - UNIX-CONNECT:/tmp/playerctlctl1000 <<< "command here"
 
 You can find my i3 bindings for this [here](https://github.com/udf/dotfiles-stow/blob/36faeb6ef6239a784931e24871a08eae29021fc7/home/.config/i3/config_main#L50-L59).
 
-If you need information about what commands you can run, look at this
-dictionary.
+If you need information about what commands you can run, look at the `COMMAND_ARGS`
+dictionary in `playerctlctl.py`.
