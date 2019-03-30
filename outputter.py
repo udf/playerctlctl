@@ -2,9 +2,9 @@ import sys
 from gi.repository import Playerctl
 
 STATUS_ICONS = {
-    Playerctl.PlaybackStatus.PAUSED: ' ',
-    Playerctl.PlaybackStatus.PLAYING: ' ',
-    Playerctl.PlaybackStatus.STOPPED: ' '
+    Playerctl.PlaybackStatus.PAUSED: '',
+    Playerctl.PlaybackStatus.PLAYING: '',
+    Playerctl.PlaybackStatus.STOPPED: ''
 }
 
 previous_output = ''
