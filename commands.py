@@ -9,6 +9,15 @@ class Commands:
     def __init__(self, move_current_player_index):
         self.move_current_player_index = move_current_player_index
 
+    def position(self, player, offset=None, absolute=True):
+        if offset is not None:
+            offset *= 1000000
+            if absolute:
+                player.set_position(offset)
+            else:
+                player.set_position(player.props.position + offset)
+        return player.get_position() / 1000000
+
     def volume(self, player, level=None, absolute=True):
         if level is not None:
             if absolute:

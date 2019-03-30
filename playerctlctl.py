@@ -28,7 +28,7 @@ COMMAND_ARGS = {
     'stop': (),
     'next': (),
     'previous': (),
-    'seek': (int,),
+    'position': (int, strtobool), #
     'volume': (float, strtobool), #
     'status': (), #
     'metadata': (str,), #
