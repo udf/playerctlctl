@@ -44,7 +44,7 @@ def get_trackname(metadata):
     return '{} - {}'.format(artist, title)
 
 
-#TODO: percentage underline and width clipping
+#TODO: percentage underline
 #TODO: track volume and print if changed
 def get_output(player):
     if not player:
