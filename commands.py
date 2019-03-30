@@ -10,10 +10,11 @@ class Commands:
         self.move_current_player_index = move_current_player_index
 
     def volume(self, player, level=None, absolute=True):
-        if absolute:
-            player.set_volume(level)
-        else:
-            player.set_volume(player.props.volume + level)
+        if level is not None:
+            if absolute:
+                player.set_volume(level)
+            else:
+                player.set_volume(player.props.volume + level)
         return player.props.volume
 
     def status(self, player):
