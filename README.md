@@ -12,7 +12,7 @@ player. This can get annoying if you open more than one player.
 
 # How tho
 Playerctl also offers a GLib interface, which includes a neat
-[PlayerManager](https://dubstepdish.com/Playerctl/PlayerctlPlayerManager.html)
+[PlayerManager](https://dubstepdish.com/playerctl/PlayerctlPlayerManager.html)
 class.  
 This script wraps that class with a unix socket server and functionality to
 select/talk to the currently active player.
