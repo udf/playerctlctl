@@ -8,8 +8,9 @@ STR_TO_LOOP_STATUS = {
 class Commands:
     def __init__(self, move_current_player_index):
         self.move_current_player_index = move_current_player_index
+        self.player = None
 
-    def position(self, player, offset=None, absolute=True):
+    def position(self, offset=None, absolute=True):
         """
         Sets/Gets the position of the player
 
@@ -20,12 +21,12 @@ class Commands:
         if offset is not None:
             offset *= 1000000
             if absolute:
-                player.set_position(offset)
+                self.player.set_position(offset)
             else:
-                player.set_position(player.props.position + offset)
-        return player.get_position() / 1000000
+                self.player.set_position(self.player.props.position + offset)
+        return self.player.get_position() / 1000000
 
-    def volume(self, player, level=None, absolute=True):
+    def volume(self, level=None, absolute=True):
         """
         Sets/Gets the volume of the player
 
@@ -35,30 +36,30 @@ class Commands:
         """
         if level is not None:
             if absolute:
-                player.set_volume(level)
+                self.player.set_volume(level)
             else:
-                player.set_volume(player.props.volume + level)
-        return player.props.volume
+                self.player.set_volume(self.player.props.volume + level)
+        return self.player.props.volume
 
-    def status(self, player):
+    def status(self):
         """
         Gets the status of the player (playing/paused/stopped)
 
         Returns the value nick name from this enum:
         https://dubstepdish.com/playerctl/PlayerctlPlayer.html#PlayerctlPlaybackStatus
         """
-        return player.get_property('playback-status').value_nick
+        return self.player.get_property('playback-status').value_nick
 
-    def metadata(self, player, key):
+    def metadata(self, key):
         """
         Gets a metadata key from the player
 
         key -- the key to get, docs for possible keys are here:
             https://www.freedesktop.org/wiki/Specifications/mpris-spec/metadata/
         """
-        return player.print_metadata_prop(key) or ''
+        return self.player.print_metadata_prop(key) or ''
 
-    def loop(self, player, status=None):
+    def loop(self, status=None):
         """
         Sets/Gets the loop status of the player
 
@@ -71,33 +72,33 @@ class Commands:
             if status is None:
                 return ('Error: Invalid status, expected one of the following: '
                     f'{", ".join(STR_TO_LOOP_STATUS.keys())}')
-            player.set_loop_status(status)
-        return player.get_property('loop-status').value_nick
+            self.player.set_loop_status(status)
+        return self.player.get_property('loop-status').value_nick
 
-    def shuffle(self, player, status=None):
+    def shuffle(self, status=None):
         """
         Sets/Gets the shuffle status of the player
 
         status -- boolean
         """
         if status is not None:
-            player.set_shuffle(status)
-        return player.props.shuffle
+            self.player.set_shuffle(status)
+        return self.player.props.shuffle
 
-    def next_player(self, player):
+    def next_player(self):
         """
         Switches the current player to the next controllable player
         """
         self.move_current_player_index(1)
 
-    def previous_player(self, player):
+    def previous_player(self):
         """
         Switchest the current player to the previous controllable player
         """
         self.move_current_player_index(-1)
 
-    def player_name(self, player):
+    def player_name(self):
         """
         Gets the name of the current player
         """
-        return player.get_property('player-name')
+        return self.player.get_property('player-name')

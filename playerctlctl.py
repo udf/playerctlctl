@@ -63,10 +63,9 @@ class ServerHandler(socketserver.StreamRequestHandler):
         except ValueError as e:
             return f'Error: {str(e)}'
 
+        commands.player = player
         f = getattr(commands, command_name, None)
-        if f:
-            args.insert(0, player)
-        else:
+        if not f:
             f = getattr(player, command_name, None)
         if not f:
             return 'Error: Function not found'
