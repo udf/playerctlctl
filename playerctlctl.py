@@ -42,6 +42,8 @@ COMMAND_ARGS = {
     'player_name': (),
 }
 
+SOCKET_PATH = f'/tmp/playerctlctl{os.getuid()}'
+
 
 class ServerHandler(socketserver.StreamRequestHandler):
     def actually_handle(self, player):
@@ -84,20 +86,7 @@ class ServerHandler(socketserver.StreamRequestHandler):
 
 
 def server_main():
-    socket_path = f'/tmp/playerctlctl{os.getuid()}'
-
-    # Try to connect to a previous instance's socket
-    try:
-        with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as s:
-            s.connect(socket_path)
-    except ConnectionRefusedError as e:
-        os.remove(socket_path)
-    except FileNotFoundError:
-        pass
-    else:
-        raise RuntimeError('An instance of playerctlctl seems to already be running for this user')
-
-    with socketserver.UnixStreamServer(socket_path, ServerHandler) as server:
+    with socketserver.UnixStreamServer(SOCKET_PATH, ServerHandler) as server:
         server.serve_forever()
 
 
@@ -147,6 +136,20 @@ def on_name_appeared(manager, name):
     player_init(name)
 
 
+def check_socket():
+    # Try to connect to a previous instance's socket
+    try:
+        with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as s:
+            s.connect(SOCKET_PATH)
+    except ConnectionRefusedError as e:
+        os.remove(SOCKET_PATH)
+    except FileNotFoundError:
+        pass
+    else:
+        raise RuntimeError('An instance of playerctlctl seems to already be running for this user')
+
+
+check_socket()
 commands = Commands(move_current_player_index)
 current_player_index = 0
 
