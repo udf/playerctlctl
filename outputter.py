@@ -1,6 +1,8 @@
 import sys
 from gi.repository import Playerctl
 
+# These icons are from nerd-fonts
+# https://github.com/ryanoasis/nerd-fonts
 STATUS_ICONS = {
     Playerctl.PlaybackStatus.PAUSED: '',
     Playerctl.PlaybackStatus.PLAYING: '',
