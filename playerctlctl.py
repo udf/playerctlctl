@@ -71,7 +71,7 @@ class ServerHandler(socketserver.StreamRequestHandler):
             f = getattr(player, command_name, None)
         if not f:
             return 'Error: Function not found'
-        
+ 
         try:
             ret = f(*args)
         except Exception as e:
