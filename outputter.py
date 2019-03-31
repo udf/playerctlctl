@@ -55,11 +55,18 @@ def get_output(player):
     metadata = player.props.metadata.unpack()
     position_str, percent = get_position_info(player.props.position, metadata)
 
+    # Status icon
     output += STATUS_ICONS.get(player.get_property('playback-status'))
     output += ' '
+
+    # Player name
     output += f"[{player.get_property('player-name')}]"
+
+    # Position
     output += f'[{position_str}]'
     output += ' '
+
+    # Track name
     output += get_trackname(metadata)
 
     # Left-justify/clip output
