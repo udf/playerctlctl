@@ -46,7 +46,6 @@ def get_trackname(metadata):
     return '{} - {}'.format(artist, title)
 
 
-#TODO: percentage underline
 #TODO: track volume and print if changed
 def get_output(player):
     if not player:
@@ -63,12 +62,19 @@ def get_output(player):
     output += ' '
     output += get_trackname(metadata)
 
+    # Left-justify/clip output
+    output = ljust_clip(output, output_len)
+
+    # Add underline tags to show player position
+    end_underline_i = round(percent * output_len)
+    output = '%{u#fff}' + output[:end_underline_i] + '%{-u}' + output[end_underline_i:]
+
     return output
 
 
 def on_status_change(player):
     global previous_output
-    output = ljust_clip(get_output(player), output_len)
+    output = get_output(player)
     if output != previous_output:
         print(output, flush=True)
         previous_output = output
