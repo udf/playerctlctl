@@ -4,7 +4,6 @@ import socket
 import socketserver
 import threading
 import traceback
-import shlex
 from distutils.util import strtobool
 
 import gi
@@ -51,7 +50,7 @@ class ServerHandler(socketserver.StreamRequestHandler):
             return 'Error: No players found'
 
         # TODO: handle decode error
-        args = shlex.split(self.rfile.readline().decode('ascii'))
+        args = self.rfile.readline().decode('ascii').strip('\0').split('\0')
         if not args:
             return 'Error: No data provided'
         command_name, args = args[0], args[1:]
