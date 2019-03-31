@@ -65,7 +65,7 @@ class ServerHandler(socketserver.StreamRequestHandler):
         except ValueError as e:
             return f'Error: {str(e)}'
 
-        commands.player = player
+        commands = Commands(move_current_player_index, player)
         f = getattr(commands, command_name, None)
         if not f:
             f = getattr(player, command_name, None)
@@ -150,7 +150,6 @@ def check_socket():
 
 
 check_socket()
-commands = Commands(move_current_player_index)
 current_player_index = 0
 
 player_manager = Playerctl.PlayerManager()

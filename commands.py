@@ -6,9 +6,9 @@ STR_TO_LOOP_STATUS = {
 }
 
 class Commands:
-    def __init__(self, move_current_player_index):
+    def __init__(self, move_current_player_index, player):
         self.move_current_player_index = move_current_player_index
-        self.player = None
+        self.player = player
 
     def position(self, offset=None, absolute=True):
         """
