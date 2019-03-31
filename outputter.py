@@ -10,6 +10,8 @@ STATUS_ICONS = {
 }
 
 previous_output = ''
+previous_volume = 0
+show_volume_steps = 20
 output_len = int(sys.argv[1]) if len(sys.argv) > 1 else 100
 
 
@@ -46,8 +48,9 @@ def get_trackname(metadata):
     return '{} - {}'.format(artist, title)
 
 
-#TODO: track volume and print if changed
 def get_output(player):
+    global previous_volume, show_volume_steps
+
     if not player:
         return ''
 
@@ -64,10 +67,18 @@ def get_output(player):
 
     # Position
     output += f'[{position_str}]'
-    output += ' '
+
+    # Volume
+    volume = round(player.props.volume * 100)
+    if volume != previous_volume:
+        show_volume_steps = 10
+        previous_volume = volume
+    show_volume_steps = max(0, show_volume_steps - 1)
+    if show_volume_steps > 0:
+        output += f'[ {volume}%]'
 
     # Track name
-    output += get_trackname(metadata)
+    output += ' ' + get_trackname(metadata)
 
     # Left-justify/clip output
     output = ljust_clip(output, output_len)
