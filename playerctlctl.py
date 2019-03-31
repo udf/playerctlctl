@@ -49,7 +49,6 @@ class ServerHandler(socketserver.StreamRequestHandler):
         if not player:
             return 'Error: No players found'
 
-        # TODO: handle decode error
         args = self.rfile.readline().decode('ascii').strip('\0').split('\0')
         if not args:
             return 'Error: No data provided'
