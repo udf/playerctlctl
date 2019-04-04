@@ -52,7 +52,7 @@ def get_output(player):
     global previous_volume, show_volume_steps
 
     if not player:
-        return ''
+        return ' ' * output_len
 
     output = ''
     metadata = player.props.metadata.unpack()
