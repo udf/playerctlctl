@@ -49,7 +49,7 @@ class ServerHandler(socketserver.StreamRequestHandler):
         if not player:
             return 'Error: No players found'
 
-        args = self.rfile.readline().decode('ascii').strip('\0').split('\0')
+        args = self.rfile.readline().decode('ascii').strip('\0\n').split('\0')
         if not args:
             return 'Error: No data provided'
         command_name, args = args[0], args[1:]
