@@ -1,0 +1,28 @@
+[build-system]
+requires = ["flit"]
+build-backend = "flit.buildapi"
+
+[tool.flit.metadata]
+module = "playerctlctl"
+author = "udf"
+author-email = "tabhooked@gmail.com"
+home-page = "https://github.com/udf/playerctlctl"
+description-file = "README.md"
+
+requires = [
+  "PyGObject>=3.22",
+]
+requires-python = ">=3"
+
+classifiers = [
+  "Environment :: No Input/Output (Daemon)",
+  "Intended Audience :: End Users/Desktop",
+  "License :: OSI Approved :: ISC License (ISCL)",
+  "Natural Language :: English",
+  "Operating System :: POSIX",
+  "Programming Language :: Python :: 3",
+  "Topic :: Multimedia :: Sound/Audio :: Players",
+]
+
+[tool.flit.scripts]
+playerctlctl = "playerctlctl:main"

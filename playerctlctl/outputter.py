@@ -9,12 +9,6 @@ STATUS_ICONS = {
     Playerctl.PlaybackStatus.STOPPED: ''
 }
 
-previous_output = ''
-previous_volume = 0
-show_volume_steps = 20
-output_len = int(sys.argv[1]) if len(sys.argv) > 1 else 100
-
-
 def ljust_clip(string, n):
     if len(string) > n:
         return string[:n-3] + '...'
@@ -33,7 +27,7 @@ def get_position_info(position, metadata):
     duration = metadata.get('mpris:length', 0)
 
     if duration:
-        return '{}/{}'.format(position_str, fmt(duration)), position / duration
+        return f'{position_str}/{fmt(duration)}', position / duration
 
     return f'{position_str}', 0
 
@@ -45,54 +39,59 @@ def get_trackname(metadata):
     if not artist:
         return title
 
-    return '{} - {}'.format(artist, title)
+    return f'{artist} - {title}'
 
 
-def get_output(player):
-    global previous_volume, show_volume_steps
+class Outputter:
+    def __init__(self, output_len=None):
+        if output_len is None:
+            output_len = 100
+        self.output_len = output_len
+        self.previous_output = ''
+        self.previous_volume = 0
+        self.show_volume_steps = 20
 
-    if not player:
-        return ' ' * output_len
+    def get_output(player):
+        if not player:
+            return ' ' * self.output_len
 
-    output = ''
-    metadata = player.props.metadata.unpack()
-    position_str, percent = get_position_info(player.props.position, metadata)
+        output = ''
+        metadata = player.props.metadata.unpack()
+        position_str, percent = get_position_info(player.props.position, metadata)
 
-    # Status icon
-    output += STATUS_ICONS.get(player.get_property('playback-status'))
-    output += ' '
+        # Status icon
+        output += STATUS_ICONS.get(player.get_property('playback-status'))
+        output += ' '
 
-    # Player name
-    output += f"[{player.get_property('player-name')}]"
+        # Player name
+        output += f"[{player.get_property('player-name')}]"
 
-    # Position
-    output += f'[{position_str}]'
+        # Position
+        output += f'[{position_str}]'
 
-    # Volume
-    volume = round(player.props.volume * 100)
-    if volume != previous_volume:
-        show_volume_steps = 10
-        previous_volume = volume
-    show_volume_steps = max(0, show_volume_steps - 1)
-    if show_volume_steps > 0:
-        output += f'[ {volume}%]'
+        # Volume
+        volume = round(player.props.volume * 100)
+        if volume != self.previous_volume:
+            self.show_volume_steps = 10
+            self.previous_volume = volume
+        self.show_volume_steps = max(0, self.show_volume_steps - 1)
+        if self.show_volume_steps > 0:
+            output += f'[ {volume}%]'
 
-    # Track name
-    output += ' ' + get_trackname(metadata)
+        # Track name
+        output += ' ' + get_trackname(metadata)
 
-    # Left-justify/clip output
-    output = ljust_clip(output, output_len)
+        # Left-justify/clip output
+        output = ljust_clip(output, self.output_len)
 
-    # Add underline tags to show player position
-    end_underline_i = round(percent * output_len)
-    output = '%{u#fff}' + output[:end_underline_i] + '%{-u}' + output[end_underline_i:]
+        # Add underline tags to show player position
+        end_underline_i = round(percent * self.output_len)
+        output = '%{u#fff}' + output[:end_underline_i] + '%{-u}' + output[end_underline_i:]
 
-    return output
+        return output
 
-
-def on_status_change(player):
-    global previous_output
-    output = get_output(player)
-    if output != previous_output:
-        print(output, flush=True)
-        previous_output = output
+    def on_status_change(player):
+        output = self.get_output(player)
+        if output != self.previous_output:
+            print(output, flush=True)
+            self.previous_output = output
