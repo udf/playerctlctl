@@ -86,24 +86,17 @@ class ServerHandler(socketserver.StreamRequestHandler):
         self.wfile.write(f'{output}\n'.encode('ascii'))
 
     @classmethod
-    def serve_forever(cls, main):
-        with socketserver.UnixStreamServer(main.socket_path, cls) as server:
+    def serve_forever(cls, main, socket_path):
+        with socketserver.UnixStreamServer(socket_path, cls) as server:
             server.main = main
             server.serve_forever()
 
 
 class Main:
-    def __init__(self, args, socket_path):
-        self.args = args
+    def __init__(self, *args, **kwargs):
         self.current_player_index = 0
-
-        output_len = None
-        if len(args) > 1:
-            output_len = int(args[1])
-        self.outputter = Outputter(output_len)
-
+        self.outputter = Outputter(*args, **kwargs)
         self.player_manager = Playerctl.PlayerManager()
-        self.socket_path = socket_path
 
     def get_current_player(self):
         players = self.player_manager.props.players
@@ -143,28 +136,27 @@ class Main:
     def on_name_appeared(self, manager, name):
         self.player_init(name)
 
-    def run(self):
-        check_socket(self.socket_path)
+    def run(self, socket_path):
+        self.check_socket(socket_path)
 
         self.player_manager.connect('name-appeared', self.on_name_appeared)
         for name in self.player_manager.props.player_names:
             self.player_init(name)
 
         threading.Thread(target=ServerHandler.serve_forever,
-                args=(self,)).start()
+                args=(self, socket_path)).start()
         GLib.timeout_add(500, self.update_status)
         GLib.MainLoop().run()
 
-
-def check_socket(socket_path):
-    # Try to connect to a previous instance's socket
-    try:
-        with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as s:
-            s.connect(socket_path)
-    except ConnectionRefusedError:
-        os.remove(socket_path)
-    except FileNotFoundError:
-        pass
-    else:
-        raise RuntimeError('An instance of playerctlctl seems to already be '
-                'running for this user')
+    def check_socket(self, socket_path):
+        # Try to connect to a previous instance's socket
+        try:
+            with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as s:
+                s.connect(socket_path)
+        except ConnectionRefusedError:
+            os.remove(socket_path)
+        except FileNotFoundError:
+            pass
+        else:
+            raise RuntimeError('An instance of playerctlctl seems to already be '
+                    'running for this user')

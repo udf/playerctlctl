@@ -2,4 +2,7 @@ import sys
 import os
 from . import Main
 
-Main(sys.argv, f'/tmp/playerctlctl{os.getuid()}').run()
+kwargs = {}
+if len(sys.argv) > 1:
+    kwargs['output_len'] = int(sys.argv[1])
+Main(**kwargs).run(f'/tmp/playerctlctl{os.getuid()}')

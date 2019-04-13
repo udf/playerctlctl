@@ -43,9 +43,7 @@ def get_trackname(metadata):
 
 
 class Outputter:
-    def __init__(self, output_len=None):
-        if output_len is None:
-            output_len = 100
+    def __init__(self, output_len=100):
         self.output_len = output_len
         self.previous_output = ''
         self.previous_volume = 0
