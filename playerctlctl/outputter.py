@@ -51,7 +51,7 @@ class Outputter:
         self.previous_volume = 0
         self.show_volume_steps = 20
 
-    def get_output(player):
+    def get_output(self, player):
         if not player:
             return ' ' * self.output_len
 
@@ -90,7 +90,7 @@ class Outputter:
 
         return output
 
-    def on_status_change(player):
+    def on_status_change(self, player):
         output = self.get_output(player)
         if output != self.previous_output:
             print(output, flush=True)

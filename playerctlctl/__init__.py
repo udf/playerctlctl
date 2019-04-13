@@ -66,7 +66,7 @@ class ServerHandler(socketserver.StreamRequestHandler):
         except ValueError as e:
             return f'Error: {str(e)}'
 
-        commands = Commands(move_current_player_index, player)
+        commands = Commands(self.server.main, player)
         f = getattr(commands, command_name, None)
         if not f:
             f = getattr(player, command_name, None)
@@ -82,12 +82,13 @@ class ServerHandler(socketserver.StreamRequestHandler):
         return 'Success'
 
     def handle(self):
-        output = self.actually_handle(get_current_player())
+        output = self.actually_handle(self.server.main.get_current_player())
         self.wfile.write(f'{output}\n'.encode('ascii'))
 
     @classmethod
-    def serve_forever(cls, socket_path):
-        with socketserver.UnixStreamServer(socket_path, cls) as server:
+    def serve_forever(cls, main):
+        with socketserver.UnixStreamServer(main.socket_path, cls) as server:
+            server.main = main
             server.serve_forever()
 
 
@@ -136,21 +137,21 @@ class Main:
     def player_init(self, name):
         player = Playerctl.Player.new_from_name(name)
         for signal_name in PLAYER_SIGNALS:
-            player.connect(signal_name, self.bound_state_change, signal_name)
+            player.connect(signal_name, self.player_state_change, signal_name)
         self.player_manager.manage_player(player)
 
     def on_name_appeared(self, manager, name):
         self.player_init(name)
 
-    def main():
-        self.check_socket(self.socket_path)
+    def run(self):
+        check_socket(self.socket_path)
 
         self.player_manager.connect('name-appeared', self.on_name_appeared)
         for name in self.player_manager.props.player_names:
             self.player_init(name)
 
-        threading.Thread(target=server_handler.serve_forever,
-                args=(self.socket_path)).start()
+        threading.Thread(target=ServerHandler.serve_forever,
+                args=(self,)).start()
         GLib.timeout_add(500, self.update_status)
         GLib.MainLoop().run()
 
@@ -160,14 +161,10 @@ def check_socket(socket_path):
     try:
         with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as s:
             s.connect(socket_path)
-    except ConnectionRefusedError as e:
+    except ConnectionRefusedError:
         os.remove(socket_path)
     except FileNotFoundError:
         pass
     else:
         raise RuntimeError('An instance of playerctlctl seems to already be '
                 'running for this user')
-
-
-if __name__ == '__main__':
-    Main().main(sys.argv, f'/tmp/playerctlctl{os.getuid()}')

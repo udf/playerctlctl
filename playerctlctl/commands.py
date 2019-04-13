@@ -6,8 +6,8 @@ STR_TO_LOOP_STATUS = {
 }
 
 class Commands:
-    def __init__(self, move_current_player_index, player):
-        self.move_current_player_index = move_current_player_index
+    def __init__(self, main, player):
+        self.main = main
         self.player = player
 
     def position(self, offset=None, absolute=True):
@@ -89,13 +89,13 @@ class Commands:
         """
         Switches the current player to the next controllable player
         """
-        self.move_current_player_index(1)
+        self.main.move_current_player_index(1)
 
     def previous_player(self):
         """
         Switchest the current player to the previous controllable player
         """
-        self.move_current_player_index(-1)
+        self.main.move_current_player_index(-1)
 
     def player_name(self):
         """
