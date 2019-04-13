@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """A daemon to make controlling multiple players easier."""
 
 __version__ = '0.1.0'
