@@ -23,7 +23,7 @@ class Commands:
             if absolute:
                 self.player.set_position(offset)
             else:
-                self.player.set_position(self.player.props.position + offset)
+                self.player.set_position(self.player.get_position() + offset)
         return self.player.get_position() / 1000000
 
     def volume(self, level=None, absolute=True):
