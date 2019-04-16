@@ -55,7 +55,7 @@ class Outputter:
 
         output = ''
         metadata = player.props.metadata.unpack()
-        position_str, percent = get_position_info(player.props.position, metadata)
+        position_str, percent = get_position_info(player.get_position(), metadata)
 
         # Status icon
         output += STATUS_ICONS.get(player.get_property('playback-status'))
