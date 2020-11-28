@@ -1,5 +1,5 @@
 import sys
-from gi.repository import Playerctl
+from gi.repository import Playerctl, GLib
 
 # These icons are from nerd-fonts
 # https://github.com/ryanoasis/nerd-fonts
@@ -17,6 +17,8 @@ def ljust_clip(string, n):
 
 def get_position_info(position, metadata):
     def fmt(microseconds):
+        if microseconds is None:
+            return '--:--'
         hours, rem = divmod(round(microseconds / 10**6), 3600)
         minutes, seconds = divmod(rem, 60)
         if hours:
@@ -57,7 +59,11 @@ class Outputter:
 
         output = ''
         metadata = player.props.metadata.unpack()
-        position_str, percent = get_position_info(player.get_position(), metadata)
+        try:
+            position = player.get_position()
+        except GLib.GError:
+            position = None
+        position_str, percent = get_position_info(position, metadata)
 
         # Status icon
         output += STATUS_ICONS.get(player.get_property('playback-status'))
