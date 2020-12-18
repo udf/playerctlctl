@@ -1,9 +1,8 @@
 import sys
 import os
+import asyncio
 from xdg import xdg_runtime_dir
-from . import Main
+from . import Daemon
 
-kwargs = {}
-if len(sys.argv) > 1:
-    kwargs['output_len'] = int(sys.argv[1])
-Main(**kwargs).run(xdg_runtime_dir() / 'playerctlctl')
+socket_path = str(xdg_runtime_dir() / 'playerctlctl')
+asyncio.run(Daemon(socket_path).run())

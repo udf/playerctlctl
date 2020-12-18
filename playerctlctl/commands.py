@@ -6,9 +6,9 @@ STR_TO_LOOP_STATUS = {
 }
 
 class Commands:
-    def __init__(self, main, player):
+    def __init__(self, main):
         self.main = main
-        self.player = player
+        self.player = main.current_player
 
     def position(self, offset=None, absolute=True):
         """
@@ -23,7 +23,7 @@ class Commands:
             if absolute:
                 self.player.set_position(offset)
             else:
-                self.player.set_position(self.player.get_position() + offset)
+               self.player.set_position(self.player.get_position() + offset)
         return self.player.get_position() / 1000000
 
     def volume(self, level=None, absolute=True):
@@ -85,20 +85,20 @@ class Commands:
             self.player.set_shuffle(status)
         return self.player.props.shuffle
 
-    def next_player(self):
+    def ctl_next(self):
         """
         Switches the current player to the next controllable player
         """
-        self.main.move_current_player_index(1)
+        return self.main.move_current_player_index(1)
 
-    def previous_player(self):
+    def ctl_previous(self):
         """
         Switchest the current player to the previous controllable player
         """
-        self.main.move_current_player_index(-1)
+        return self.main.move_current_player_index(-1)
 
-    def player_name(self):
+    def ctl_instance(self):
         """
-        Gets the name of the current player
+        Gets the instance of the current player
         """
-        return self.player.get_property('player-name')
+        return self.player.get_property('player-instance')
