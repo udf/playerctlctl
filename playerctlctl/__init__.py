@@ -12,8 +12,9 @@ import gi
 gi.require_version('Playerctl', '2.0')
 from gi.repository import Playerctl, GLib
 
-from . import commands
+from .utils import get_player_instance, is_player_active
 from .commands import Commands
+from .events import Events
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -44,17 +45,10 @@ COMMAND_ARGS = {
     'ctl_next': (),
     'ctl_previous': (),
     'ctl_instance': (),
+
+    # playerctlctl events
+    'event_player_change': (),
 }
-
-
-def get_player_instance(player):
-    if not player:
-        return ''
-    return player.get_property('player-instance')
-
-
-def is_player_active(player):
-    return player.get_property('playback-status') == Playerctl.PlaybackStatus.PLAYING
 
 
 class Daemon:
@@ -63,17 +57,21 @@ class Daemon:
         self.current_player = None
         self.socket_path = socket_path
         self.player_manager = Playerctl.PlayerManager()
+        self.event_loop = None
+        self.event_player_change = None
 
     def set_current_player(self, player):
         if player is None:
             logger.debug('Unsetting current player')
             self.current_player_index = 0
             self.current_player = None
+            self.set_event(self.event_player_change)
             return
         players = self.player_manager.props.players
         logger.debug(f'Current player was [{self.current_player_index}] = {get_player_instance(self.current_player)}')
         self.current_player_index = players.index(player)
         self.current_player = player
+        self.set_event(self.event_player_change)
         logger.debug(f'Current player set to [{self.current_player_index}] = {get_player_instance(self.current_player)}')
 
     def move_current_player_index(self, amount):
@@ -141,7 +139,19 @@ class Daemon:
         next_player = players[min(self.current_player_index, len(players) - 1)]
         self.set_current_player(self.find_first_active_player() or next_player)
 
-    def handle_socket_oneshot(self, args):
+    def set_event(self, event):
+        async def _set_event():
+            event.set()
+
+        try:
+            if asyncio.get_event_loop() == self.event_loop:
+                event.set()
+                return
+        except RuntimeError:
+            pass
+        asyncio.run_coroutine_threadsafe(_set_event(), self.event_loop).result()
+
+    async def handle_socket_inner(self, args, reader, writer):
         if not self.current_player:
             return 'Error: No players found'
         if not args:
@@ -158,13 +168,16 @@ class Daemon:
         except ValueError as e:
             return f'Error: {str(e)}'
 
-        commands = Commands(self)
-        f = getattr(commands, command_name, None)
+        f = getattr(Events(self, reader, writer), command_name, None)
+        if f:
+            return await f(*args)
+        if not f:
+            f = getattr(Commands(self), command_name, None)
         if not f:
             f = getattr(self.current_player, command_name, None)
         if not f:
             return 'Error: Function not found'
- 
+
         try:
             ret = f(*args)
         except Exception as e:
@@ -174,11 +187,14 @@ class Daemon:
         return 'Success'
 
     async def handle_socket(self, reader, writer):
-        args = (await reader.readline()).decode('ascii').strip('\0\n').split('\0')
-        output = self.handle_socket_oneshot(args)
-        writer.write(f'{output}\n'.encode('ascii'))
-        writer.close()
-        await writer.wait_closed()
+        try:
+            args = (await reader.readline()).decode('ascii').strip('\0\n').split('\0')
+            output = await self.handle_socket_inner(args, reader, writer)
+            writer.write(f'{output}\n'.encode('ascii'))
+            writer.close()
+            await writer.wait_closed()
+        except ConnectionResetError:
+            pass
 
     async def check_socket(self):
         try:
@@ -193,6 +209,8 @@ class Daemon:
             )
 
     async def run(self):
+        self.event_loop = asyncio.get_running_loop()
+        self.event_player_change = asyncio.Event()
         await self.check_socket()
         self.player_manager.connect('name-appeared', self.on_name_appeared)
         self.player_manager.connect('player-appeared', self.on_player_appeared)
@@ -201,9 +219,8 @@ class Daemon:
         for name in self.player_manager.props.player_names:
             self.player_init(name)
 
-        loop = asyncio.get_running_loop()
         pool = concurrent.futures.ThreadPoolExecutor()
-        f = loop.run_in_executor(pool, lambda: GLib.MainLoop().run())
+        f = self.event_loop.run_in_executor(pool, lambda: GLib.MainLoop().run())
 
         server = await asyncio.start_unix_server(self.handle_socket, self.socket_path)
         async with server:
