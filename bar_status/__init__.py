@@ -51,5 +51,6 @@ class Status:
             try:
                 await self.main_loop(reader, writer)
             except ConnectionError as e:
-                print_text(f'Disconnected: {e}', self.max_output_length)
-                await asyncio.sleep(3)
+                pass
+            print_text(f'Disconnected from daemon', self.max_output_length)
+            await asyncio.sleep(1)

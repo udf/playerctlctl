@@ -69,7 +69,7 @@ class RPCWrapper:
             logger.warn(f'Unexpected exception in rpc loop: {e}')
             logger.warn(traceback.format_exc())
             if isinstance(e, ConnectionError):
-                return True
+                raise
 
     async def main_loop(self, request_handler=dummy_req_handler):
         callbacks_loop = asyncio.create_task(self.callbacks_loop())
