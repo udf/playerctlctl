@@ -59,7 +59,7 @@ class Commands:
         Returns the value nick name from this enum:
         https://dubstepdish.com/playerctl/PlayerctlPlayer.html#PlayerctlPlaybackStatus
         """
-        return self.player.get_property('playback-status').value_nick
+        return self.player.get_property('playback-status').value_nick.lower()
 
     def get_metadata_key(self, key):
         """
@@ -80,7 +80,7 @@ class Commands:
         """
         Gets the loop status of the player
         """
-        return self.player.get_property('loop-status').value_nick
+        return self.player.get_property('loop-status').value_nick.lower()
 
     def set_loop_status(self, status):
         """
