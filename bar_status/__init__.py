@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import traceback
 
 from .rpc_wrapper import RPCWrapper
 from .outputter import print_output
@@ -23,12 +24,16 @@ class Status:
     async def output_loop(self, rpc):
         await rpc.do_request('ctl_subscribe')
         while 1:
-            await print_output(rpc, self.max_output_length)
-            await asyncio.wait(
-                [asyncio.sleep(0.5), self.force_update.wait()],
-                return_when=asyncio.FIRST_COMPLETED
-            )
-            self.force_update.clear()
+            try:
+                await print_output(rpc, self.max_output_length)
+                await asyncio.wait(
+                    [asyncio.sleep(0.5), self.force_update.wait()],
+                    return_when=asyncio.FIRST_COMPLETED
+                )
+                self.force_update.clear()
+            except Exception as e:
+                logger.warn(f'Unexpected exception in output loop: {e}')
+                logger.warn(traceback.format_exc())
 
     async def main_loop(self, reader, writer):
         rpc = RPCWrapper(reader, writer)

@@ -117,12 +117,7 @@ async def get_output(rpc, max_length):
 async def print_output(rpc, max_length):
     global prev_output
 
-    try:
-        output = await get_output(rpc, max_length)
-    except Exception as e:
-        output = str(e)
-        logger.warn(traceback.format_exc())
-
+    output = await get_output(rpc, max_length)
     if output != prev_output:
         print(output, flush=True)
     prev_output = output
