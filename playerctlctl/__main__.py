@@ -1,5 +1,3 @@
-import sys
-import os
 import asyncio
 from xdg import xdg_runtime_dir
 from . import Daemon

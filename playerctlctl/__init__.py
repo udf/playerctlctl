@@ -17,7 +17,6 @@ from tinyrpc import MethodNotFoundError, BadRequestError, InvalidParamsError
 
 from .utils import get_player_instance, is_player_active, are_params_valid
 from .commands import Commands
-from .events import Events
 
 
 logging.basicConfig(level=logging.DEBUG)
