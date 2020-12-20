@@ -75,7 +75,7 @@ def get_trackname(metadata):
 
 
 async def get_output(rpc, max_length):
-    player_name = await rpc.do_request('ctl_get_name')
+    player_name = await rpc.do_request('ctl_get_instance')
     if not player_name:
         return ' ' * max_length
 
