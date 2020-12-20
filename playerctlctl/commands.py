@@ -5,18 +5,29 @@ STR_TO_LOOP_STATUS = {
     for e in Playerctl.LoopStatus.__enum_values__.values()
 }
 
+
+def require_player(method):
+    def wrapper(self, *args, **kwargs):
+        if not self.player:
+            raise RuntimeError('No active player')
+        return method(self, *args, **kwargs)
+    return wrapper
+
+
 class Commands:
     def __init__(self, main, event_cb=None):
         self.main = main
         self.player = main.current_player
         self.event_cb = event_cb
 
+    @require_player
     def get_position(self):
         """
         Gets the position of the player in seconds
         """
         return self.player.get_position() / 1000000
 
+    @require_player
     def set_position(self, offset, absolute=True):
         """
         Sets the position of the player
@@ -32,12 +43,14 @@ class Commands:
            self.player.set_position(self.player.get_position() + offset)
         return self.get_position()
 
+    @require_player
     def get_volume(self):
         """
         Gets the volume of the player
         """
         return self.player.props.volume
 
+    @require_player
     def set_volume(self, level, absolute=True):
         """
         Sets the volume of the player
@@ -52,6 +65,7 @@ class Commands:
             self.player.set_volume(self.player.props.volume + level)
         return self.get_volume()
 
+    @require_player
     def get_status(self):
         """
         Gets the status of the player (playing/paused/stopped)
@@ -61,6 +75,7 @@ class Commands:
         """
         return self.player.get_property('playback-status').value_nick.lower()
 
+    @require_player
     def get_metadata_key(self, key):
         """
         Gets a metadata key from the player
@@ -70,18 +85,21 @@ class Commands:
         """
         return self.player.print_metadata_prop(key) or ''
 
+    @require_player
     def get_all_metadata(self):
         """
         Gets all metadata keys from the player
         """
         return self.player.props.metadata.unpack()
 
+    @require_player
     def get_loop_status(self):
         """
         Gets the loop status of the player
         """
         return self.player.get_property('loop-status').value_nick.lower()
 
+    @require_player
     def set_loop_status(self, status):
         """
         Sets/Gets the loop status of the player
@@ -99,12 +117,14 @@ class Commands:
         self.player.set_loop_status(status)
         return self.get_loop_status()
 
+    @require_player
     def is_shuffled(self):
         """
         Gets the shuffle status of the player
         """
         return self.player.props.shuffle
 
+    @require_player
     def set_shuffled(self, status):
         """
         Sets the shuffle status of the player
@@ -130,7 +150,17 @@ class Commands:
         """
         Gets the instance of the current player
         """
+        if not self.player:
+            return ''
         return self.player.get_property('player-instance')
+
+    def ctl_get_name(self):
+        """
+        Gets the name of the current player
+        """
+        if not self.player:
+            return ''
+        return self.player.get_property('player-name')
 
     def ctl_subscribe(self):
         """
