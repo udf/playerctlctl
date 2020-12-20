@@ -1,0 +1,10 @@
+[Unit]
+Description=A daemon to make controlling multiple players easier
+
+[Service]
+ExecStart=/usr/bin/python3 -m playerctlctl
+WorkingDirectory=%h/path/to/repo
+Restart=always
+
+[Install]
+WantedBy=default.target

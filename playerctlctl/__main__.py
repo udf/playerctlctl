@@ -1,6 +1,8 @@
 import asyncio
-from xdg import xdg_runtime_dir
+import logging
+import os
+
 from . import Daemon
 
-socket_path = str(xdg_runtime_dir() / 'playerctlctl')
+socket_path = os.path.join(os.environ["XDG_RUNTIME_DIR"], 'playerctlctl')
 asyncio.run(Daemon(socket_path).run())

@@ -1,8 +1,8 @@
 import asyncio
-import sys
 import logging
+import os
+import sys
 
-from xdg import xdg_runtime_dir
 from . import Status
 
 logging.basicConfig(level=logging.WARN)
@@ -11,5 +11,5 @@ max_length = 100
 if len(sys.argv) > 1:
     max_length = int(sys.argv[1])
 
-socket_path = str(xdg_runtime_dir() / 'playerctlctl')
+socket_path = os.path.join(os.environ["XDG_RUNTIME_DIR"], 'playerctlctl')
 asyncio.run(Status(socket_path, max_length).run())
