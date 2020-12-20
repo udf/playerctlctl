@@ -19,7 +19,7 @@ class RPCWrapper:
         self.reader = reader
         self.writer = writer
         self.pending_requests = {}
-        self.request_queue = asyncio.Queue()
+        self.callbacks_queue = asyncio.Queue()
 
     async def do_request(self, method, args=None, kwargs=None, one_way=False):
         req = rpc.create_request(method, args=args, kwargs=kwargs, one_way=one_way)
@@ -38,9 +38,9 @@ class RPCWrapper:
             raise RPCError(ret.error)
         return ret.result
 
-    async def request_loop(self):
+    async def callbacks_loop(self):
         while 1:
-            coro = await self.request_queue.get()
+            coro = await self.callbacks_queue.get()
             try:
                 await coro
             except Exception as e:
@@ -56,7 +56,7 @@ class RPCWrapper:
                 reply = rpc.parse_reply(msg)
             except InvalidReplyError:
                 request = rpc.parse_request(msg)
-                self.request_queue.put_nowait(request_handler(self, request))
+                self.callbacks_queue.put_nowait(request_handler(self, request))
                 return
             fut = self.pending_requests.get(reply.unique_id, None)
             if not fut:
@@ -72,11 +72,11 @@ class RPCWrapper:
                 return True
 
     async def main_loop(self, request_handler=dummy_req_handler):
-        request_loop = asyncio.create_task(self.request_loop())
+        callbacks_loop = asyncio.create_task(self.callbacks_loop())
         try:
             while 1:
                 should_break = await self.main_loop_inner(request_handler)
                 if should_break:
                     break
         finally:
-            request_loop.cancel()
+            callbacks_loop.cancel()
