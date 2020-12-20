@@ -11,26 +11,20 @@ logger = logging.getLogger('status')
 class Status:
     def __init__(self, socket_path, max_output_length=100):
         self.socket_path = socket_path
-        self.force_update = None
         self.max_output_length = max_output_length
 
     async def handle_request(self, rpc, request):
         if request.method != 'event':
             logger.warn(f'Unexpected request: {request.serialize()}')
             return
-        # Prevent deadlock by setting event instead of awaiting outputter
-        self.force_update.set()
+        await print_output(rpc, self.max_output_length)
 
     async def output_loop(self, rpc):
         await rpc.do_request('ctl_subscribe')
         while 1:
             try:
                 await print_output(rpc, self.max_output_length)
-                await asyncio.wait(
-                    [asyncio.sleep(0.5), self.force_update.wait()],
-                    return_when=asyncio.FIRST_COMPLETED
-                )
-                self.force_update.clear()
+                await asyncio.sleep(0.5)
             except Exception as e:
                 logger.warn(f'Unexpected exception in output loop: {e}')
                 logger.warn(traceback.format_exc())
@@ -52,7 +46,6 @@ class Status:
                 await asyncio.sleep(5)
 
     async def run(self):
-        self.force_update = asyncio.Event()
         while 1:
             reader, writer = await self.connect()
             try:

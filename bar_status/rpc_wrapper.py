@@ -19,6 +19,7 @@ class RPCWrapper:
         self.reader = reader
         self.writer = writer
         self.pending_requests = {}
+        self.request_queue = asyncio.Queue()
 
     async def do_request(self, method, args=None, kwargs=None, one_way=False):
         req = rpc.create_request(method, args=args, kwargs=kwargs, one_way=one_way)
@@ -37,30 +38,45 @@ class RPCWrapper:
             raise RPCError(ret.error)
         return ret.result
 
+    async def request_loop(self):
+        while 1:
+            coro = await self.request_queue.get()
+            try:
+                await coro
+            except Exception as e:
+                logger.warn(f'Unexpected exception in rpc request loop: {e}')
+                logger.warn(traceback.format_exc())
+
     async def main_loop_inner(self, request_handler):
-        msg = await self.reader.readline()
-        if not msg:
-            return True
         try:
-            reply = rpc.parse_reply(msg)
-        except InvalidReplyError:
-            request = rpc.parse_request(msg)
-            await request_handler(self, request)
-            return
-        fut = self.pending_requests.get(reply.unique_id, None)
-        if not fut:
-            logger.warn(f'Unexpected reply: {msg}')
-            return
-        logger.debug(f'Got reply to #{reply.unique_id}: {msg}')
-        fut.set_result(reply)
-        del self.pending_requests[reply.unique_id]
+            msg = await self.reader.readline()
+            if not msg:
+                return True
+            try:
+                reply = rpc.parse_reply(msg)
+            except InvalidReplyError:
+                request = rpc.parse_request(msg)
+                self.request_queue.put_nowait(request_handler(self, request))
+                return
+            fut = self.pending_requests.get(reply.unique_id, None)
+            if not fut:
+                logger.warn(f'Unexpected reply: {msg}')
+                return
+            logger.debug(f'Got reply to #{reply.unique_id}: {msg}')
+            fut.set_result(reply)
+            del self.pending_requests[reply.unique_id]
+        except Exception as e:
+            logger.warn(f'Unexpected exception in rpc loop: {e}')
+            logger.warn(traceback.format_exc())
+            if isinstance(e, ConnectionError):
+                return True
 
     async def main_loop(self, request_handler=dummy_req_handler):
-        while 1:
-            try:
+        request_loop = asyncio.create_task(self.request_loop())
+        try:
+            while 1:
                 should_break = await self.main_loop_inner(request_handler)
                 if should_break:
                     break
-            except Exception as e:
-                logger.warn(f'Unexpected exception in main loop: {e}')
-                logger.warn(traceback.format_exc())
+        finally:
+            request_loop.cancel()
