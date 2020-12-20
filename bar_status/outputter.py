@@ -125,7 +125,7 @@ async def print_output(rpc, max_length):
 
 def print_text(text, max_length):
     global prev_output
-    text = ljust_clip(text, max_length)
+    text = '%{u#cc6666}' + ljust_clip(f' {text}', max_length)
     if text != prev_output:
         print(text, flush=True)
     prev_output = text
