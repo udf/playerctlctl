@@ -43,7 +43,7 @@ class Status:
                 return await asyncio.open_unix_connection(self.socket_path)
             except ConnectionRefusedError as e:
                 print_text(f'Failed to connect: {e}', self.max_output_length)
-                await asyncio.sleep(5)
+                await asyncio.sleep(3)
 
     async def run(self):
         while 1:
@@ -52,3 +52,4 @@ class Status:
                 await self.main_loop(reader, writer)
             except ConnectionError as e:
                 print_text(f'Disconnected: {e}', self.max_output_length)
+                await asyncio.sleep(3)
