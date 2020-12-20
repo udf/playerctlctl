@@ -3,7 +3,7 @@ import logging
 import traceback
 
 from .rpc_wrapper import RPCWrapper
-from .outputter import print_output
+from .outputter import print_output, print_text
 
 logger = logging.getLogger('status')
 
@@ -24,10 +24,10 @@ class Status:
         while 1:
             try:
                 await print_output(rpc, self.max_output_length)
-                await asyncio.sleep(0.5)
             except Exception as e:
                 logger.warn(f'Unexpected exception in output loop: {e}')
                 logger.warn(traceback.format_exc())
+            await asyncio.sleep(0.5)
 
     async def main_loop(self, reader, writer):
         rpc = RPCWrapper(reader, writer)
@@ -42,7 +42,7 @@ class Status:
             try:
                 return await asyncio.open_unix_connection(self.socket_path)
             except ConnectionRefusedError as e:
-                print(f'Failed to connect: {e}')
+                print_text(f'Failed to connect: {e}', self.max_output_length)
                 await asyncio.sleep(5)
 
     async def run(self):
@@ -51,4 +51,4 @@ class Status:
             try:
                 await self.main_loop(reader, writer)
             except ConnectionError as e:
-                print(f'Disconnected: {e}')
+                print_text(f'Disconnected: {e}', self.max_output_length)
