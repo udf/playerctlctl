@@ -11,44 +11,22 @@ from distutils.util import strtobool
 import gi
 gi.require_version('Playerctl', '2.0')
 from gi.repository import Playerctl, GLib
+from tinyrpc.protocols.jsonrpc import JSONRPCProtocol
+from tinyrpc import MethodNotFoundError, BadRequestError, InvalidParamsError
 
-from .utils import get_player_instance, is_player_active
+from .utils import get_player_instance, is_player_active, are_params_valid
 from .commands import Commands
 from .events import Events
 
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('daemon')
+rpc = JSONRPCProtocol()
 
 PLAYER_SIGNALS = (
     'loop-status', 'metadata', 'playback-status', 'seeked',
     'shuffle', 'volume'
 )
-
-COMMAND_ARGS = {
-    # playerctl commands (ones marked with # are wrapped)
-    'loop': (str,), #
-    'metadata': (str,), #
-    'next': (),
-    'open': (str,),
-    'pause': (),
-    'play': (),
-    'play_pause': (),
-    'position': (int, strtobool), #
-    'previous': (),
-    'shuffle': (strtobool,), #
-    'status': (), #
-    'stop': (),
-    'volume': (float, strtobool), #
-
-    # playerctlctl commands
-    'ctl_next': (),
-    'ctl_previous': (),
-    'ctl_instance': (),
-
-    # playerctlctl events
-    'event_player_change': (),
-}
 
 
 class Daemon:
@@ -58,21 +36,42 @@ class Daemon:
         self.socket_path = socket_path
         self.player_manager = Playerctl.PlayerManager()
         self.event_loop = None
-        self.event_player_change = None
+        self.event_listeners = set()
+
+    def init_glib(self):
+        self.player_manager.connect('name-appeared', self.on_name_appeared)
+        self.player_manager.connect('player-appeared', self.on_player_appeared)
+        self.player_manager.connect('player-vanished', self.on_player_vanished)
+
+        for name in self.player_manager.props.player_names:
+            self.player_init(name)
+
+        return False
+
+    def player_init(self, name):
+        player = Playerctl.Player.new_from_name(name)
+        player.connect('playback-status', self.on_playback_state_change)
+        self.player_manager.manage_player(player)
 
     def set_current_player(self, player):
-        if player is None:
-            logger.debug('Unsetting current player')
-            self.current_player_index = 0
-            self.current_player = None
-            self.set_event(self.event_player_change)
-            return
-        players = self.player_manager.props.players
-        logger.debug(f'Current player was [{self.current_player_index}] = {get_player_instance(self.current_player)}')
-        self.current_player_index = players.index(player)
-        self.current_player = player
-        self.set_event(self.event_player_change)
-        logger.debug(f'Current player set to [{self.current_player_index}] = {get_player_instance(self.current_player)}')
+        def inner():
+            if player is None:
+                logger.debug('Unsetting current player')
+                self.current_player_index = 0
+                self.current_player = None
+                return
+            players = self.player_manager.props.players
+            self.current_player_index = players.index(player)
+            self.current_player = player
+            logger.debug(f'Current player set to [{self.current_player_index}] = {get_player_instance(self.current_player)}')
+
+        prev_player = self.current_player
+        inner()
+        if self.current_player != prev_player:
+            self.publish_event(
+                'player_change',
+                instance=get_player_instance(self.current_player)
+            )
 
     def move_current_player_index(self, amount):
         players = self.player_manager.props.players
@@ -92,13 +91,7 @@ class Daemon:
             None
         )
 
-    def player_init(self, name):
-        player = Playerctl.Player.new_from_name(name)
-        player.connect('playback-status', self.on_playback_state_change)
-        self.player_manager.manage_player(player)
-
     def on_name_appeared(self, manager, name):
-        logger.debug(f'New player: {name.instance}')
         self.player_init(name)
 
     def on_playback_state_change(self, player, state):
@@ -139,61 +132,74 @@ class Daemon:
         next_player = players[min(self.current_player_index, len(players) - 1)]
         self.set_current_player(self.find_first_active_player() or next_player)
 
-    def set_event(self, event):
-        async def _set_event():
-            event.set()
+    def publish_event(self, event, **kwargs):
+        logger.debug(f'Publishing event: {event}={kwargs}')
+        stale_listeners = set()
+        for listener in self.event_listeners:
+            ret = asyncio.run_coroutine_threadsafe(
+                listener(event, **kwargs),
+                self.event_loop
+            ).result()
+            if not ret:
+                stale_listeners.add(listener)
+        self.event_listeners = self.event_listeners - stale_listeners
+        logger.debug(f'Removed {len(stale_listeners)} stale listener(s)')
+
+    def handle_socket_req(self, req, send_event):
+        s = req.method.split('.', 1)
+        if len(s) == 2:
+            namespace, method = s
+        else:
+            namespace, method = None, req.method
+
+        obj = {
+            'player': self.current_player
+        }.get(namespace, Commands(self, send_event))
+
+        f = getattr(obj, method, None)
+        if not f:
+            return req.error_respond(MethodNotFoundError())
+
+        if not are_params_valid(f, req.args, req.kwargs):
+            return req.error_respond(InvalidParamsError())
 
         try:
-            if asyncio.get_event_loop() == self.event_loop:
-                event.set()
-                return
-        except RuntimeError:
-            pass
-        asyncio.run_coroutine_threadsafe(_set_event(), self.event_loop).result()
-
-    async def handle_socket_inner(self, args, reader, writer):
-        if not self.current_player:
-            return 'Error: No players found'
-        if not args:
-            return 'Error: No input provided'
-
-        command_name, args = args[0], args[1:]
-        arg_types = COMMAND_ARGS.get(command_name, None)
-        if arg_types is None:
-            return 'Error: Unknown function'
-
-        try:
-            for i, (arg, arg_type) in enumerate(zip(args, arg_types)):
-                args[i] = arg_type(arg)
-        except ValueError as e:
-            return f'Error: {str(e)}'
-
-        f = getattr(Events(self, reader, writer), command_name, None)
-        if f:
-            return await f(*args)
-        if not f:
-            f = getattr(Commands(self), command_name, None)
-        if not f:
-            f = getattr(self.current_player, command_name, None)
-        if not f:
-            return 'Error: Function not found'
-
-        try:
-            ret = f(*args)
+            ret = f(*req.args, **req.kwargs)
         except Exception as e:
-            return f'Error: {type(e).__name__}: {str(e)}'
-        if ret is not None:
-            return str(ret)
-        return 'Success'
+            return req.error_respond(e)
+        return req.respond(ret)
+
+    async def run_rpc_loop(self, reader, writer):
+        async def send_event(event, **kwargs):
+            kwargs = {**kwargs, **{'event': event}}
+            notification = rpc.create_request(f'event', kwargs=kwargs, one_way=True)
+            try:
+                writer.write(notification.serialize())
+                writer.write(b'\n')
+                await writer.drain()
+            except (ConnectionAbortedError, ConnectionResetError):
+                return False
+            return True
+
+        while 1:
+            msg = await reader.readline()
+            if not msg:
+                break
+            try:
+                req = rpc.parse_request(msg)
+                res = self.handle_socket_req(req, send_event)
+            except BadRequestError as e:
+                res = e.error_respond()
+            except:
+                res = BadRequestError().error_respond()
+            writer.write(res.serialize())
+            writer.write(b'\n')
+            await writer.drain()
 
     async def handle_socket(self, reader, writer):
         try:
-            args = (await reader.readline()).decode('ascii').strip('\0\n').split('\0')
-            output = await self.handle_socket_inner(args, reader, writer)
-            writer.write(f'{output}\n'.encode('ascii'))
-            writer.close()
-            await writer.wait_closed()
-        except ConnectionResetError:
+            await self.run_rpc_loop(reader, writer)
+        except (ConnectionAbortedError, ConnectionResetError):
             pass
 
     async def check_socket(self):
@@ -210,16 +216,10 @@ class Daemon:
 
     async def run(self):
         self.event_loop = asyncio.get_running_loop()
-        self.event_player_change = asyncio.Event()
         await self.check_socket()
-        self.player_manager.connect('name-appeared', self.on_name_appeared)
-        self.player_manager.connect('player-appeared', self.on_player_appeared)
-        self.player_manager.connect('player-vanished', self.on_player_vanished)
-
-        for name in self.player_manager.props.player_names:
-            self.player_init(name)
 
         pool = concurrent.futures.ThreadPoolExecutor()
+        GLib.timeout_add(0, self.init_glib)
         f = self.event_loop.run_in_executor(pool, lambda: GLib.MainLoop().run())
 
         server = await asyncio.start_unix_server(self.handle_socket, self.socket_path)

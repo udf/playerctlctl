@@ -6,9 +6,10 @@ STR_TO_LOOP_STATUS = {
 }
 
 class Commands:
-    def __init__(self, main):
+    def __init__(self, main, event_cb=None):
         self.main = main
         self.player = main.current_player
+        self.event_cb = event_cb
 
     def position(self, offset=None, absolute=True):
         """
@@ -70,8 +71,10 @@ class Commands:
         if status:
             status = STR_TO_LOOP_STATUS.get(status.lower(), None)
             if status is None:
-                return ('Error: Invalid status, expected one of the following: '
-                    f'{", ".join(STR_TO_LOOP_STATUS.keys())}')
+                raise RuntimeError(
+                    'Error: Invalid status, expected one of the following: '
+                    f'{", ".join(STR_TO_LOOP_STATUS.keys())}'
+                )
             self.player.set_loop_status(status)
         return self.player.get_property('loop-status').value_nick
 
@@ -102,3 +105,7 @@ class Commands:
         Gets the instance of the current player
         """
         return self.player.get_property('player-instance')
+
+    def ctl_subscribe(self):
+        self.main.event_listeners.add(self.event_cb)
+        return True
