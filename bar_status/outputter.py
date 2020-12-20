@@ -75,8 +75,8 @@ def get_trackname(metadata):
 
 
 async def get_output(rpc, max_length):
-    player_instance = await rpc.do_request('ctl_get_instance')
-    if not player_instance:
+    player_name = await rpc.do_request('ctl_get_name')
+    if not player_name:
         return ' ' * max_length
 
     output = ''
@@ -92,7 +92,7 @@ async def get_output(rpc, max_length):
     output += ' '
 
     # Player name
-    output += f"[{player_instance}]"
+    output += f"[{player_name}]"
 
     # Position
     output += f'[{position_str}]'
