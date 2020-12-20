@@ -19,7 +19,6 @@ from .utils import get_player_instance, is_player_active, are_params_valid
 from .commands import Commands
 
 
-logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('daemon')
 rpc = JSONRPCProtocol()
 
