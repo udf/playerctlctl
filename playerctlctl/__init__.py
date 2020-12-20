@@ -72,13 +72,14 @@ class Daemon:
                 for handler_id in self.signal_handlers:
                     prev_player.disconnect(handler_id)
                 self.signal_handlers = []
-  
-            for signal_name in PLAYER_SIGNALS:
-                handler_id = self.current_player.connect(
-                    signal_name,
-                    partial(self.on_player_signal, signal_name)
-                )
-                self.signal_handlers.append(handler_id)
+
+            if self.current_player:
+                for signal_name in PLAYER_SIGNALS:
+                    handler_id = self.current_player.connect(
+                        signal_name,
+                        partial(self.on_player_signal, signal_name)
+                    )
+                    self.signal_handlers.append(handler_id)
 
             self.publish_event(
                 'ctl_player_change',
