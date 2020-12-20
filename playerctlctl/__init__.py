@@ -6,6 +6,7 @@ import os
 import asyncio
 import concurrent.futures
 import logging
+from functools import partial
 from distutils.util import strtobool
 
 import gi
@@ -24,8 +25,7 @@ logger = logging.getLogger('daemon')
 rpc = JSONRPCProtocol()
 
 PLAYER_SIGNALS = (
-    'loop-status', 'metadata', 'playback-status', 'seeked',
-    'shuffle', 'volume'
+    'loop-status', 'metadata', 'seeked', 'shuffle', 'volume'
 )
 
 
@@ -33,6 +33,7 @@ class Daemon:
     def __init__(self, socket_path):
         self.current_player_index = 0
         self.current_player = None
+        self.signal_handlers = []
         self.socket_path = socket_path
         self.player_manager = Playerctl.PlayerManager()
         self.event_loop = None
@@ -68,8 +69,20 @@ class Daemon:
         prev_player = self.current_player
         inner()
         if self.current_player != prev_player:
+            if prev_player:
+                for handler_id in self.signal_handlers:
+                    prev_player.disconnect(handler_id)
+                self.signal_handlers = []
+  
+            for signal_name in PLAYER_SIGNALS:
+                handler_id = self.current_player.connect(
+                    signal_name,
+                    partial(self.on_player_signal, signal_name)
+                )
+                self.signal_handlers.append(handler_id)
+
             self.publish_event(
-                'player_change',
+                'ctl_player_change',
                 instance=get_player_instance(self.current_player)
             )
 
@@ -91,10 +104,16 @@ class Daemon:
             None
         )
 
-    def on_name_appeared(self, manager, name):
-        self.player_init(name)
+    def on_player_signal(self, event, player, *args):
+        args = list(args)
+        for i, v in enumerate(args):
+            if hasattr(v, 'unpack'):
+                args[i] = v.unpack()
+        self.publish_event(event, data=args)
 
     def on_playback_state_change(self, player, state):
+        if player == self.current_player:
+            self.publish_event('playback-status', data=[state.value_nick])
         if is_player_active(self.current_player):
             return
         if state == Playerctl.PlaybackStatus.PLAYING:
@@ -103,6 +122,9 @@ class Daemon:
         active_player = self.find_first_active_player()
         if player == self.current_player and active_player:
             self.set_current_player(active_player)
+
+    def on_name_appeared(self, manager, name):
+        self.player_init(name)
 
     def on_player_appeared(self, manager, player):
         logger.debug(f'Player added: {get_player_instance(player)}')
@@ -143,7 +165,8 @@ class Daemon:
             if not ret:
                 stale_listeners.add(listener)
         self.event_listeners = self.event_listeners - stale_listeners
-        logger.debug(f'Removed {len(stale_listeners)} stale listener(s)')
+        if stale_listeners:
+            logger.debug(f'Removed {len(stale_listeners)} stale listener(s)')
 
     def handle_socket_req(self, req, send_event):
         s = req.method.split('.', 1)
