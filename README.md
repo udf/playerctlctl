@@ -27,38 +27,30 @@ player.
 Firstly, you should get playerctl running on your system and talking to a
 player of your choice.
 
-I made this to replace [my statusbar script][dotfiles-polybar-music], so you
-need to make your own outputter module for your own bar.
+I made this to replace [my old statusbar script][dotfiles-polybar-music], so you
+need to make your own outputter module for your own bar (see the `bar_status` module).
 
-After you get the output appearing correctly in your bar (anywhere, really)
-you need to set up hotkeys to talk to playerctlctl.
+After you get the daemon running correctly, preferably using the included
+`playerctlctl.service` unit you should set up hotkeys to talk to playerctlctl.
 
-I use [socat][] to do this:
-```sh
-# command and args are NUL delimited
-printf '%s\0' command args ... | socat - UNIX-CONNECT:/tmp/playerctlctl1000
-```
+I use [socat][] to do this, see [my playerctlctlctl helper script][playerctlctlctl].
 
-[My i3 bindings][dotfiles-i3-bindings] and
-[the helper `playerctlctlctl` script][playerctlctlctl] can be found at their
-respective links.
+[My i3 bindings][dotfiles-i3-bindings] are an example of using the helper script.
 
 If you want information about what commands you can run, look at the
-`COMMAND_ARGS` dictionary in `playerctlctl` and the docstrings in
-`playerctlctl.commands`. Note that if a command doesn't exist in `.commands`,
-then playerctlctl tries to run your input function directly on the
-[PlayerctlPlayer][api-player] object.
+`Commands` class in `commands.py`. Note that you can run a function on the [PlayerctlPlayer][api-player] object by prefixing it with `player.`
+(for example, `player.next`).
 
 
 [api-player]: https://dubstepdish.com/playerctl/PlayerctlPlayer.html
 [api-player-manager]: https://dubstepdish.com/playerctl/PlayerctlPlayerManager.html
-[dotfiles-i3-bindings]: https://github.com/udf/dotfiles-stow/blob/36faeb6ef6239a784931e24871a08eae29021fc7/home/.config/i3/config_main#L50-L59
+[dotfiles-i3-bindings]: https://github.com/udf/dotfiles-stow/blob/b80cde9df64293bf877e4da2b66592ce81955892/home/.config/i3/config_main#L47-L66
 [dotfiles-polybar-music]: https://github.com/udf/dotfiles-stow/blob/5444705006ee8d416e96038f0bc7d2d15fc75096/home/.config/polybar/music.py
 [license]: ./LICENSE.txt
 [mpris]: https://specifications.freedesktop.org/mpris-spec/latest/
 [playerctl]: https://github.com/acrisci/playerctl
 [playerctlctl]: https://github.com/udf/playerctlctl
-[playerctlctlctl]: https://github.com/udf/dotfiles-stow/blob/42c046d6615f825ba8b194d814d93bdf37052952/home/scripts/playerctlctlctl
+[playerctlctlctl]: https://github.com/udf/dotfiles-stow/blob/b80cde9df64293bf877e4da2b66592ce81955892/home/scripts/playerctlctlctl
 [socat]: http://www.dest-unreach.org/socat/
 [spdx]: https://spdx.org/licenses/
 [spdx-isc]: https://spdx.org/licenses/ISC.html
