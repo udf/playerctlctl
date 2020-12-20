@@ -60,6 +60,12 @@ class Commands:
         """
         return self.player.print_metadata_prop(key) or ''
 
+    def all_metadata(self):
+        """
+        Gets all metadata keys from the player
+        """
+        return self.player.props.metadata.unpack()
+
     def loop(self, status=None):
         """
         Sets/Gets the loop status of the player
@@ -107,5 +113,8 @@ class Commands:
         return self.player.get_property('player-instance')
 
     def ctl_subscribe(self):
+        """
+        Subscribes to all player events
+        """
         self.main.event_listeners.add(self.event_cb)
         return True
