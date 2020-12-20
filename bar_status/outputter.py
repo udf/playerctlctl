@@ -1,5 +1,4 @@
 import asyncio
-import sys
 import time
 import logging
 import traceback
@@ -16,9 +15,6 @@ STATUS_ICONS = {
     'stopped': ''
 }
 prev_output = ''
-
-if len(sys.argv) > 1:
-    max_length = int(sys.argv[1])
 
 
 class AutoHideModule:
