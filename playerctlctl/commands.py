@@ -15,9 +15,9 @@ def require_player(method):
 
 
 class Commands:
-    def __init__(self, main, event_cb=None):
-        self.main = main
-        self.player = main.current_player
+    def __init__(self, daemon, event_cb=None):
+        self.daemon = daemon
+        self.player = daemon.core.current_player
         self.event_cb = event_cb
 
     @require_player
@@ -138,13 +138,13 @@ class Commands:
         """
         Switches the current player to the next controllable player
         """
-        return self.main.move_current_player_index(1)
+        return self.daemon.core.move_current_player_index(1)
 
     def ctl_previous(self):
         """
         Switchest the current player to the previous controllable player
         """
-        return self.main.move_current_player_index(-1)
+        return self.daemon.core.move_current_player_index(-1)
 
     def ctl_get_instance(self):
         """
@@ -166,5 +166,8 @@ class Commands:
         """
         Subscribes to all player events
         """
-        self.main.event_listeners.add(self.event_cb)
+        self.daemon.event_listeners.add(self.event_cb)
         return True
+
+    def ctl_raise(self):
+        raise RuntimeError('test error please ignore')
