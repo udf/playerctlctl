@@ -2,6 +2,17 @@ import inspect
 from gi.repository import Playerctl
 
 
+def on_exception(callback, exceptions=(Exception)):
+    def inner(func):
+        def wrapper(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except exceptions as e:
+                return callback(e, *args, **kwargs)
+        return wrapper
+    return inner
+
+
 def get_player_instance(player):
     if not player:
         return ''
