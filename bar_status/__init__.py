@@ -6,7 +6,7 @@ from .rpc_wrapper import RPCWrapper
 from .outputter import print_output, print_text
 
 logger = logging.getLogger('status')
-
+LIMIT = 1024 * 1024  # 1 MiB
 
 class Status:
     def __init__(self, socket_path, max_output_length=100):
@@ -40,7 +40,7 @@ class Status:
     async def connect(self):
         while 1:
             try:
-                return await asyncio.open_unix_connection(self.socket_path)
+                return await asyncio.open_unix_connection(self.socket_path, limit=LIMIT)
             except ConnectionRefusedError as e:
                 print_text(f'Failed to connect: {e}', self.max_output_length)
                 await asyncio.sleep(3)
