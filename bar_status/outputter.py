@@ -47,17 +47,18 @@ def get_position_info(position, metadata):
     def fmt(seconds):
         if seconds is None:
             return '--:--'
-        hours, rem = divmod(round(seconds), 3600)
+        prefix = '-' if seconds < 0 else ''
+        hours, rem = divmod(round(abs(seconds)), 3600)
         minutes, seconds = divmod(rem, 60)
         if hours:
-            return f'{hours:02}:{minutes:02}:{seconds:02}'
-        return f'{minutes:02}:{seconds:02}'
+            return f'{prefix}{hours:02}:{minutes:02}:{seconds:02}'
+        return f'{prefix}{minutes:02}:{seconds:02}'
 
     position_str = fmt(position)
     duration = metadata.get('mpris:length', 0) / 1000000
 
     if duration:
-        return f'{position_str}/{fmt(duration)}', position / duration
+        return f'{position_str}/{fmt(duration)}', max(position, 0) / duration
 
     return f'{position_str}', 0
 
