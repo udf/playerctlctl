@@ -18,23 +18,25 @@ prev_output = ''
 
 
 class AutoHideModule:
-    def __init__(self, fmt='{}', timeout=5):
+    def __init__(self, fmt='{}', hidden_fmt='{}', timeout=5):
         self.fmt = fmt
+        self.hidden_fmt = hidden_fmt
         self.timeout = timeout
         self.prev_change = 0
         self.prev_output = ''
 
-    def get_output(self, val):
+    def get_output(self, val, hidden_text=''):
         output = self.fmt.format(val)
         if output != self.prev_output:
             self.prev_change = time.time()
         self.prev_output = output
         if time.time() - self.prev_change < self.timeout:
             return output
-        return ''
+        return self.hidden_fmt.format(hidden_text)
 
 
 volume_module = AutoHideModule('[ {}%]', timeout=5)
+player_name_module = AutoHideModule('[{}]', '[{}]', timeout=5)
 
 
 def ljust_clip(string, n):
@@ -76,8 +78,8 @@ def get_trackname(metadata):
 
 
 async def get_output(rpc, max_length):
-    player_name = await rpc.do_request('ctl_get_instance')
-    if not player_name:
+    player_instance = await rpc.do_request('ctl_get_instance')
+    if not player_instance:
         return ' ' * max_length
 
     output = ''
@@ -93,7 +95,8 @@ async def get_output(rpc, max_length):
     output += ' '
 
     # Player name
-    output += f"[{player_name}]"
+    player_name = await rpc.do_request('ctl_get_name')
+    output += player_name_module.get_output(player_instance, player_name)
 
     # Position
     output += f'[{position_str}]'
