@@ -68,7 +68,10 @@ def get_position_info(position, metadata):
 def get_trackname(metadata):
     title = metadata.get('xesam:title', '')
     artist = metadata.get('xesam:artist', '')
+    url = metadata.get('xesam:url', '')
 
+    if not title:
+        return url.split('/')[-1]
     if not artist:
         return title
     if isinstance(artist, list):
