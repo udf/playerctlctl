@@ -1,3 +1,7 @@
+# Note
+This project is archived and deprecated in favour of playerctld, despite [all][playerctl-garbage1] [its][playerctl-garbage2] [flaws][playerctl-garbage3].  
+I recommend using [a script like this][music-script] to correctly follow the current player because of how broken playerctl's follow mode is.
+
 # Playerctlctl
 
 [Playerctlctl][] is a daemon that talks to [playerctl][] (a command-line
@@ -54,3 +58,7 @@ If you want information about what commands you can run, look at the
 [socat]: http://www.dest-unreach.org/socat/
 [spdx]: https://spdx.org/licenses/
 [spdx-isc]: https://spdx.org/licenses/ISC.html
+[playerctl-garbage1]: https://github.com/altdesktop/playerctl/issues/247
+[playerctl-garbage2]: https://github.com/altdesktop/playerctl/issues/270
+[playerctl-garbage3]: https://github.com/altdesktop/playerctl/issues/304
+[music-script]: https://github.com/udf/dotfiles-stow/commit/2c7571a8171df8ba7e9a8c1b745fbae70248cb7f#diff-c78e3272bfe6acc0f6a39f499c71b8ef7a5fdb60eca439be1b05c0d9a3f0e82c
